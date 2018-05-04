@@ -7,16 +7,18 @@ import App from './App'
 import router from './router'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
+import lrz from 'lrz'
 import './stylesheets/index.scss'
+import global from './components/global'
 
 Vue.config.productionTip = false
 Vue.use(ElementUI)
 Vue.use(VueAxios, axios)
 
-Vue.prototype.setCookie = (name, value, expiredays) => {
-  var exdate = new Date();
-  exdate.setDate(exdate.getDate() + expiredays);　　　　
-  document.cookie = name + "=" + escape(value) + ((expiredays == null) ? "" : ";expires=" + exdate.toGMTString());
+function setCookie(name, value, expiretime) {
+  var exp = new Date();
+  exp.setTime(exp.getTime() + expiretime);　　
+  document.cookie = name + "=" + escape(value) + ((expiretime == null) ? "" : ";expires=" + exp.toGMTString());
 }
 
 function getCookie(name) {
@@ -27,18 +29,28 @@ function getCookie(name) {
     return null;
 }
 
-Vue.prototype.getCookie = getCookie;
-
-
-Vue.prototype.delCookie = (name) => {
+function delCookie(name) {
   var exp = new Date();
   exp.setTime(exp.getTime() - 1);
-  var cval = getCookie(name);
-  if (cval != null)
-    document.cookie = name + "=" + cval + ";expires=" + exp.toGMTString();
+  var val = getCookie(name);
+  if (val != null)
+    document.cookie = name + "=" + val + ";expires=" + exp.toGMTString();
 }
 
-Vue.prototype.server = 'http://192.168.31.208';
+function getRequestConfig() {
+  var config = {
+    headers: {
+      'Authorization': getCookie('token')
+    }
+  }
+  return config;
+}
+
+Vue.prototype.setCookie = setCookie;
+Vue.prototype.getCookie = getCookie;
+Vue.prototype.delCookie = delCookie;
+Vue.prototype.getRequestConfig = getRequestConfig;
+Vue.prototype.GLOBAL = global;
 
 new Vue({
   el: '#app',
@@ -53,21 +65,16 @@ new Vue({
   watch: {
     $route(to, from) {
       this.checkLogin();
-      if(this.getCookie('tel') && this.getCookie('token')) {
-        var expire = 1000 * 60 * 60 * 36;
-        this.setCookie('tel', this.getCookie('tel'), expire);
-        this.setCookie('token', this.getCookie('token'), expire);
-      }
     }
   },
 
   methods: {
     checkLogin() {
-      if(!(this.getCookie('tel') && this.getCookie('token'))) {
-        this.$router.push('/login')
+      if(!(this.getCookie('token'))) {
+        this.$router.push(this.GLOBAL.routers.login)
       } else {
-        if(this.$route.path == '/login') {
-          this.$router.push('/admin');
+        if(this.$route.path == this.GLOBAL.routers.login) {
+          this.$router.push(this.GLOBAL.routers.projects);
         } else {
           this.$router.push(this.$route.path);
         }
